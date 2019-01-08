@@ -1,14 +1,9 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLineEdit, QLabel, QCheckBox
-from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSlot
-from multiprocessing import Process
-from time import sleep
 from bs4 import *
 import urllib.request
-from subprocess import Popen, PIPE
 import webbrowser
-import platform
 from PyQt5 import QtTest
 import os
 
@@ -28,10 +23,9 @@ class App(QWidget):
         self.gear_box_choice = None
         self.value = None
         self.running = None
-        #self.ignore()
+        # self.ignore()
         self.initUI()
 
-    
     def initUI(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
@@ -43,20 +37,20 @@ class App(QWidget):
         self.vin.move(70, 320)
         self.rwd_button.move(0, 300)
 
-        #creating a textbox
+        # creating a textbox
         self.textbox = QLineEdit(self)
         self.textbox.move(0, 350)
         self.textbox.resize(100, 30)
         newlabel = QLabel("<--- Enter the page number (1, 2, etc)", self)
-        newlabel.move(100,350)
-        newlabel.resize(200,30)
+        newlabel.move(100, 350)
+        newlabel.resize(200, 30)
         button_submit_page_number = QPushButton("Search", self)
         autist = QPushButton('Exit', self)
         autist.clicked.connect(self.wat)
-        button_submit_page_number.move(0,380)
+        button_submit_page_number.move(0, 380)
         button_submit_page_number.clicked.connect(self.on_click)
         textbox_value = self.textbox.text()
-        #Help label
+        # Help label
         help_label = QLabel('''How to use:
         1) Checking the "Manual" checkbox will only look for manual transmission
         cars, unchecking it will only look for automatic transmission cars.
@@ -66,17 +60,17 @@ class App(QWidget):
         unchecking it only looks for cars
         without vin code.
          ''', self)
-        help_label.move(320,0)
-        help_label.resize(600,180)
+        help_label.move(320, 0)
+        help_label.resize(600, 180)
         odometer_value = QLabel("Maksimum läbisõit (km)", self)
         self.odometer_value_box = QLineEdit(self)
-        self.odometer_value_box.move(0,270)
+        self.odometer_value_box.move(0, 270)
         odometer_value.move(0, 250)
         self.show()
 
     @pyqtSlot()
     def on_click(self):
-        
+
         try:
             self.value = self.textbox.text()
             print(self.value)
@@ -85,43 +79,43 @@ class App(QWidget):
         self.gear_box_value = self.gear_box.isChecked()
         self.vin_box_value = self.vin.isChecked()
         self.rwd_check = self.rwd_button.isChecked()
-        if self.gear_box_value is True:
+        if self.gear_box_value:
             self.gear_box_choice = True
 
         else:
             self.gear_box_choice = False
-        if self.vin_box_value is True:
+        if self.vin_box_value:
             self.vin_choice = True
         else:
             self.vin_choice = False
-        if self.rwd_check is True:
+        if self.rwd_check:
             self.rwd = True
         else:
             self.rwd = False
 
-
         self.running = True
         print("Page selected: " + str(self.value))
         self.on_click_run()
+
     def auto24_scraper(self):
-       
+
         while self.running:
             i = 0
             temporary = 1
-            if self.running is True:
+            if self.running:
                 print(self.running)
             else:
                 print("Breaking")
                 break
-            for pages in range(325):
+            for pages in range(325):  # why 325?
 
-                pagenumber = temporary * 50 - 50
-                if self.running is True:
+                page_number = temporary * 50 - 50
+                if self.running:
                     pass
                 else:
                     print("Breaking")
                     break
-                url = "http://www.auto24.ee/kasutatud/nimekiri.php?a=101&ak=" + str(pagenumber)
+                url = "http://www.auto24.ee/kasutatud/nimekiri.php?a=101&ak=" + str(page_number)
                 print("Moving to page: {}".format(url))
                 print("Currently on page: {}".format(temporary))
                 request_url = urllib.request.urlopen(url).read()
@@ -137,9 +131,9 @@ class App(QWidget):
                         new_url = urllib.request.urlopen(car_url).read()
                         i += 1
                         print("Cars scanned {}".format(i))
-                        if self.running is True:
+                        if self.running:
                             pass
-                        elif self.running is False:
+                        else:
                             print("Breaking...")
                             break
                         car_deal = BeautifulSoup(new_url, 'lxml')
@@ -150,40 +144,43 @@ class App(QWidget):
                         table_value = table_type.find('span', class_='value')
                         try:
                             odometer_size = table_value.string
-                            nonBreakSpace = u'\xa0'  # Creating the breakspace so we could remove that
+                            non_break_space = u'\xa0'  # Creating the breakspace so we could remove that
                             odometer_size_int = odometer_size.replace('km', '')
-                            odometer_size_int_new = odometer_size_int.replace(nonBreakSpace, '')  # Removing &nonbreakspace
-                            if int(odometer_size_int_new) > int(self.odometer_value_box.text()): # If there are more than 200k km on the odometer then it's bad
+                            odometer_size_int_new = odometer_size_int.replace(non_break_space,
+                                                                              '')  # Removing &non_break_space
+                            if int(odometer_size_int_new) > int(
+                                    self.odometer_value_box.text()):  # If there are more than 200k km on the odometer then it's bad
                                 return False
                             else:
                                 return True
 
                         except AttributeError:
                             return False
+
                     def check_vin():
-                        
-                        if self.vin_choice is True:
+
+                        if self.vin_choice:
                             car_info_table = car_deal.find('table', class_='section main-data')
                             table_type = car_info_table.find('tr', class_='field-tehasetahis')
                             vin_preview = table_type.find('span', class_='preview')
                             try:
-                                vin = vin_preview.text
+                                vin = vin_preview.text  # What for??
                                 return True
                             except AttributeError:
                                 return False
-                        elif self.vin_choice is False:
+                        else:
                             car_info_table = car_deal.find('table', class_='section main-data')
                             table_type = car_info_table.find('tr', class_='field-tehasetahis')
                             vin_preview = table_type.find('span', class_='preview')
                             try:
-                                vin = vin_preview.text
+                                vin = vin_preview.text  # What for??
                                 return True
                             except AttributeError:
                                 return True
 
                     def check_gearbox():
-                        
-                        if self.gear_box_choice is True:
+
+                        if self.gear_box_choice:
                             car_info_table = car_deal.find('table', class_='section main-data')
                             table_type = car_info_table.find('tr', class_='field-kaigukast_kaikudega')
                             value = table_type.find('span', class_='value')
@@ -195,7 +192,7 @@ class App(QWidget):
                                     return False
                             except AttributeError:
                                 return True
-                        elif self.gear_box_choice is False:
+                        else:
                             car_info_table = car_deal.find('table', class_='section main-data')
                             table_type = car_info_table.find('tr', class_='field-kaigukast_kaikudega')
                             value = table_type.find('span', class_='value')
@@ -207,9 +204,10 @@ class App(QWidget):
                                     return False
                             except AttributeError:
                                 return True
+
                     def check_rwd():
-                        
-                        if self.rwd is True:
+
+                        if self.rwd:
                             car_info_table = car_deal.find('table', class_="section main-data")
                             table_type = car_info_table.find('tr', class_='field-vedavsild')
                             value = table_type.find('span', class_='value')
@@ -219,7 +217,7 @@ class App(QWidget):
                                     return True
                             except AttributeError:
                                 return False
-                        elif self.rwd is False:
+                        else:
                             car_info_table = car_deal.find('table', class_="section main-data")
                             table_type = car_info_table.find('tr', class_='field-vedavsild')
                             value = table_type.find('span', class_='value')
@@ -228,7 +226,8 @@ class App(QWidget):
                                 if new_value == "esivedu":
                                     return True
                             except AttributeError:
-                                    return False
+                                return False
+
                     def check_dealer():
                         car_info_table = car_deal.find('h1', class_='commonSubtitle')  # GOing in the h1 class
                         get_dealer = car_info_table.find('a', class_='dealer-name')
@@ -240,6 +239,7 @@ class App(QWidget):
                                 return True
                         except AttributeError:
                             return True
+
                     def check_price():
                         car_info_table = car_deal.find('table', class_='section main-data')
                         table_type = car_info_table.find('tr', class_='field-hind')
@@ -255,8 +255,8 @@ class App(QWidget):
                         except:
                             print("Car has no discount price")
 
-                    if check_vin() is True and check_gearbox() is True and check_rwd() is True and check_dealer() is True \
-                            and odometer() is True:
+                    if check_vin() and check_gearbox() and check_rwd() and check_dealer() \
+                            and odometer():
                         print("Car found...")
                         print("Opening...")
                         print("Waiting 20 seconds...")
@@ -268,8 +268,10 @@ class App(QWidget):
 
     def wat(self):
         os._exit(1)
+
     def on_click_run(self):
         self.auto24_scraper()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
