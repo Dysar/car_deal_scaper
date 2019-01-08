@@ -1,4 +1,4 @@
 PyQt5
 bs4
 lxml
-webbrowser
+webbrowser (is part of the python standard library, you don't have to install a separate package)
